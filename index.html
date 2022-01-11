@@ -19,6 +19,8 @@
 	<script type="module">
 
 		import * as THREE from './js/three.module.js';
+
+		//ARButton少し修正しています
 		import { ARButton } from './js/ARButton.js';
 
 		let container;
@@ -46,33 +48,36 @@
 			light.position.set(0.5, 1, 0.25);
 			scene.add(light);
 
-			//
-
+			//three.jsのセットアップ
 			renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 			renderer.setPixelRatio(window.devicePixelRatio);
 			renderer.setSize(window.innerWidth, window.innerHeight);
 			renderer.xr.enabled = true;
 			container.appendChild(renderer.domElement);
 
-			//
+			//AR画面上にオーバーレイする DOM
 			let overlay = document.getElementById("overlay")
 
+			//webxrを起動する
 			document.body.appendChild(ARButton.createButton(
-				renderer,
-				{ requiredFeatures: ['hit-test'], overlay: overlay },
-				onSessionStarted
-			)
+					renderer,
+					{ requiredFeatures: ['hit-test'], overlay: overlay },
+					onSessionStarted
+				)
 			);
 
+			//ar sessionが起動したときに呼び出される（オリジナルのARButtonにはない機能)
 			function onSessionStarted(session) {
 				state_element.innerText = "on session started"
 
+				//hit testの準備
 				session.requestReferenceSpace('viewer').then(function (referenceSpace) {
 					session.requestHitTestSource({ space: referenceSpace }).then(function (source) {
 						hitTestSource = source;
 					});
 
 				});
+				//終了時のお片付け
 				session.addEventListener('end', function () {
 					hitTestSource = null;
 				});
@@ -130,12 +135,16 @@
 				// どの座標系を基準にするか？
 				const referenceSpace = renderer.xr.getReferenceSpace();
 
-				//
+				// ヒットテストのオブジェクトが準備されていれば実行
 				if (hitTestSource) {
+					//ヒットテスト実行
 					const hitTestResults = frame.getHitTestResults(hitTestSource);
 
+					//lengthが０の時はなにもない？
 					if (hitTestResults.length) {
 						const hit = hitTestResults[0];
+
+						//レイと周辺形状の交点に○マークをおく
 						reticle.visible = true;
 						reticle.matrix.fromArray(hit.getPose(referenceSpace).transform.matrix);
 					} else {
